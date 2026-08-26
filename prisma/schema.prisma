@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Columnas exactas para tu Tablero Kanban
+enum Estado {
+  SOLICITADO
+  EN_ANALISIS
+  EN_DESARROLLO
+  DESPLEGADO
+}
+
+model Usuario {
+  id               String           @id @default(cuid())
+  nombre           String
+  email            String           @unique
+  password         String           // Aquí guardaremos la contraseña encriptada
+  rol              String           @default("DEV")
+  creadoEn         DateTime         @default(now())
+
+  requerimientos   Requerimiento[]
+  comentarios      Comentario[]
+  // AGREGADO: Relación inversa para saber qué documentó cada usuario
+  modulosAvanzados ModuloAvanzado[] 
+}
+
+model Requerimiento {
+  id          String       @id @default(cuid())
+  titulo      String
+  descripcion String
+  estado      Estado       @default(SOLICITADO)
+  creadoEn    DateTime     @default(now())
+  
+  usuarioId   String
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+  
+  comentarios Comentario[]
+}
+
+model Comentario {
+  id              String        @id @default(cuid())
+  texto           String
+  
+  // 2. Soporte para el Gestor de Snippets de Código
+  codigoSnippet   String?       @db.Text 
+  lenguaje        String?       // Ej: "javascript", "sql", "python"
+  
+  creadoEn        DateTime      @default(now())
+  
+  requerimientoId String
+  requerimiento   Requerimiento @relation(fields: [requerimientoId], references: [id])
+  
+  usuarioId       String
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
+}
+
+// 3. Diccionario de Módulos Avanzados (Wiki)
+model ModuloAvanzado {
+  id               String   @id @default(cuid())
+  titulo           String
+  descripcion      String   @db.Text
+  problemaResuelve String   @db.Text
+  sistemasConexos  String?  // Con qué otros sistemas se conecta
+  creadoEn         DateTime @default(now())
+
+  // AGREGADO: Relación con el usuario para saber quién documentó este módulo
+  usuarioId        String
+  usuario          Usuario  @relation(fields: [usuarioId], references: [id])
+}
