@@ -1,18 +1,16 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Kanban, BookText, Activity, Users } from "lucide-react"
+import { Kanban, BookText, Activity } from "lucide-react"
 import Link from "next/link"
 import prisma from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  // Obtenemos la sesión para saludar al usuario
   const session = await getServerSession(authOptions)
   const nombre = session?.user?.name || "Usuario"
 
-  // Consultas rápidas para mostrar estadísticas reales (opcional pero le da un toque profesional)
   const totalTareas = await prisma.requerimiento.count()
   const totalModulos = await prisma.moduloAvanzado.count()
 
@@ -24,8 +22,6 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Tarjeta de Estado */}
         <Card className="shadow-sm border-slate-200 bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Estado del Sistema</CardTitle>
@@ -37,7 +33,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Acceso Directo Kanban */}
         <Link href="/kanban" className="block group">
           <Card className="shadow-sm border-slate-200 bg-white group-hover:border-blue-400 group-hover:shadow-md transition-all h-full cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -51,7 +46,6 @@ export default async function DashboardPage() {
           </Card>
         </Link>
 
-        {/* Acceso Directo Wiki */}
         <Link href="/wiki" className="block group">
           <Card className="shadow-sm border-slate-200 bg-white group-hover:border-violet-400 group-hover:shadow-md transition-all h-full cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -64,7 +58,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
-
       </div>
     </main>
   )
