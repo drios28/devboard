@@ -1,64 +1,71 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import prisma from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Kanban, BookText, Activity, Users } from "lucide-react"
 import Link from "next/link"
-import GraficoTareas from "@/components/GraficoTareas"
+import prisma from "@/lib/prisma"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
-export default async function DashboardGerencial() {
-  const [agrupacionEstados, totalModulos] = await Promise.all([
-    prisma.requerimiento.groupBy({
-      by: ['estado'],
-      _count: { estado: true },
-    }),
-    prisma.moduloAvanzado.count(),
-  ])
+export default async function DashboardPage() {
+  // Obtenemos la sesión para saludar al usuario
+  const session = await getServerSession(authOptions)
+  const nombre = session?.user?.name || "Usuario"
 
-  const conteo = {
-    SOLICITADO: 0,
-    EN_ANALISIS: 0,
-    EN_DESARROLLO: 0,
-    DESPLEGADO: 0,
-  }
-
-  let total = 0
-  agrupacionEstados.forEach((item) => {
-    conteo[item.estado] = item._count.estado
-    total += item._count.estado
-  })
-
-  const completados = conteo.DESPLEGADO
-  const pendientes = total - completados
-
-  const datosGrafico = [
-    { nombre: "Solicitado", cantidad: conteo.SOLICITADO },
-    { nombre: "Análisis", cantidad: conteo.EN_ANALISIS },
-    { nombre: "Desarrollo", cantidad: conteo.EN_DESARROLLO },
-    { nombre: "Desplegado", cantidad: completados },
-  ]
+  // Consultas rápidas para mostrar estadísticas reales (opcional pero le da un toque profesional)
+  const totalTareas = await prisma.requerimiento.count()
+  const totalModulos = await prisma.moduloAvanzado.count()
 
   return (
-    <main className="p-4 sm:p-8 bg-slate-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Dashboard Ejecutivo</h1>
-        <p className="text-sm sm:text-base text-slate-500">Resumen general de requerimientos y desarrollo</p>
+    <main className="p-8 bg-slate-50 min-h-screen">
+      <div className="mb-8 border-b border-slate-200 pb-6">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Ejecutivo</h1>
+        <p className="text-slate-500 mt-2">Bienvenido de nuevo, <span className="font-semibold text-slate-700">{nombre}</span>. Aquí tienes el resumen de tu proyecto.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs sm:text-sm font-medium text-slate-500">Total Tareas</CardTitle></CardHeader><CardContent><div className="text-2xl sm:text-3xl font-bold">{total}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs sm:text-sm font-medium text-slate-500">Pendientes</CardTitle></CardHeader><CardContent><div className="text-2xl sm:text-3xl font-bold text-amber-600">{pendientes}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs sm:text-sm font-medium text-slate-500">Desplegados</CardTitle></CardHeader><CardContent><div className="text-2xl sm:text-3xl font-bold text-green-600">{completados}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs sm:text-sm font-medium text-slate-500">Módulos Wiki</CardTitle></CardHeader>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Tarjeta de Estado */}
+        <Card className="shadow-sm border-slate-200 bg-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Estado del Sistema</CardTitle>
+            <Activity className="text-emerald-500" size={20} />
+          </CardHeader>
           <CardContent>
-            <Link href="/wiki" className="text-2xl sm:text-3xl font-bold text-blue-600 hover:underline">{totalModulos}</Link>
+            <div className="text-2xl font-bold text-slate-900">En Producción</div>
+            <p className="text-xs text-emerald-600 font-medium mt-1">Desplegado en Railway</p>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-lg sm:text-xl">Flujo de Requerimientos</CardTitle></CardHeader>
-        <CardContent><GraficoTareas datos={datosGrafico} /></CardContent>
-      </Card>
+        {/* Acceso Directo Kanban */}
+        <Link href="/kanban" className="block group">
+          <Card className="shadow-sm border-slate-200 bg-white group-hover:border-blue-400 group-hover:shadow-md transition-all h-full cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Tablero Kanban</CardTitle>
+              <Kanban className="text-blue-500 group-hover:scale-110 transition-transform" size={20} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">{totalTareas} Tareas</div>
+              <p className="text-xs text-slate-500 mt-1">Gestionar requerimientos y foros</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Acceso Directo Wiki */}
+        <Link href="/wiki" className="block group">
+          <Card className="shadow-sm border-slate-200 bg-white group-hover:border-violet-400 group-hover:shadow-md transition-all h-full cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Diccionario Wiki</CardTitle>
+              <BookText className="text-violet-500 group-hover:scale-110 transition-transform" size={20} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">{totalModulos} Módulos</div>
+              <p className="text-xs text-slate-500 mt-1">Base de conocimiento técnico</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+      </div>
     </main>
   )
 }
