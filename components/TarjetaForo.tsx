@@ -33,7 +33,7 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
 
   return (
     <Dialog>
-      {/* VISTA PREVIA DE LA TARJETA EN EL TABLERO */}
+      {/* VISTA PREVIA EN EL TABLERO */}
       <Card className="shadow-sm hover:border-slate-400 transition-colors cursor-pointer group">
         <CardContent className="p-4">
           <h3 className="font-semibold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{req.titulo}</h3>
@@ -43,7 +43,6 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
             <Badge variant="secondary" className="text-[10px] font-normal bg-slate-100 text-slate-600">
               {req.usuario?.nombre || 'Usuario Desconocido'}
             </Badge>
-            {/* CORRECCIÓN DE FECHA (HYDRATION FIX) */}
             <span className="text-[10px] text-slate-400 font-mono">
               {new Date(req.creadoEn).toLocaleDateString("es-ES")}
             </span>
@@ -55,9 +54,8 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
         </CardContent>
       </Card>
 
-      {/* MODAL DETALLADO CON TODO EL CONTENIDO RESTAURADO */}
+      {/* MODAL DETALLADO */}
       <DialogContent className="w-full sm:max-w-5xl h-[90vh] overflow-y-auto bg-slate-50 p-4 sm:p-8">
-        
         <DialogHeader className="mb-6 border-b pb-6">
           {!isEditing ? (
             <div className="flex justify-between items-start pr-6">
@@ -106,7 +104,6 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
         </DialogHeader>
 
         <div className="space-y-8">
-          {/* ZONA DE COMENTARIOS Y DIAGRAMAS */}
           {req.comentarios?.length > 0 ? (
             <div className="space-y-6">
               {req.comentarios.map((com: any) => (
@@ -114,11 +111,9 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
                   <div className="flex justify-between items-center bg-slate-100/50 px-6 py-3 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-sm text-slate-700">{com.usuario?.nombre || 'Desconocido'}</span>
-                      {/* CORRECCIÓN DE FECHA (HYDRATION FIX) */}
                       <span className="text-xs text-slate-400 font-mono">{new Date(com.creadoEn).toLocaleDateString("es-ES")}</span>
                     </div>
                     
-                    {/* Botón de borrar aporte (Solo si es tu aporte) */}
                     {usuarioActualId === com.usuarioId && (
                       <button 
                         onClick={async () => {
@@ -142,10 +137,19 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
                          <DiagramaMermaid codigo={com.codigoSnippet} />
                       </div>
                     ) : com.codigoSnippet ? (
-                      <pre className="p-4 text-sm text-green-400 bg-slate-900 rounded-xl overflow-x-auto font-mono mt-4 shadow-inner">
-                        <div className="text-xs text-slate-500 mb-2 uppercase">{com.lenguaje}</div>
-                        <code>{com.codigoSnippet}</code>
-                      </pre>
+                      <div className="mt-4 bg-slate-900 rounded-md overflow-hidden relative shadow-inner">
+                        <div className="text-xs text-slate-400 bg-slate-800 px-4 py-1.5 uppercase font-semibold tracking-wider">
+                          {com.lenguaje || "CODE"}
+                        </div>
+                        {/* LÓGICA DE TAMAÑO DINÁMICO */}
+                        <pre className={`p-4 text-green-400 overflow-x-auto font-mono ${
+                          com.codigoSnippet.length > 500 ? 'text-[10px] leading-tight' : 
+                          com.codigoSnippet.length > 200 ? 'text-xs leading-snug' : 
+                          'text-sm leading-relaxed'
+                        }`}>
+                          <code>{com.codigoSnippet}</code>
+                        </pre>
+                      </div>
                     ) : null}
                   </CardContent>
                 </Card>
@@ -157,7 +161,6 @@ export default function TarjetaForo({ req, agregarComentario, usuarioActualId }:
             </div>
           )}
 
-          {/* EDITOR INTERACTIVO */}
           <div className="bg-white p-6 rounded-xl border shadow-sm">
             <EditorForoInteractivo requerimientoId={req.id} agregarComentario={agregarComentario} />
           </div>

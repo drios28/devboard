@@ -5,6 +5,10 @@ import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
+// 1. Importamos la sesión de NextAuth
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+
 export default async function ForoRequerimiento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   
@@ -31,18 +35,10 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
     const codigoSnippet = formData.get("codigoSnippet") as string
     const lenguaje = formData.get("lenguaje") as string
     
-    let usuario = await prisma.usuario.findFirst()
-    if (!usuario) {
-      // CORRECCIÓN: Se agregan email y password obligatorios
-      usuario = await prisma.usuario.create({ 
-        data: { 
-          nombre: "Dev", 
-          rol: "DEV",
-          email: "dev@contingencia.com",
-          password: "123"
-        } 
-      })
-    }
+    // 2. Obtenemos el usuario real de la sesión
+    const session = await getServerSession(authOptions)
+    const currentUserId = (session?.user as any)?.id
+    if (!currentUserId) throw new Error("No autorizado")
     
     if (texto || codigoSnippet) {
       await prisma.comentario.create({
@@ -51,7 +47,7 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
           codigoSnippet: codigoSnippet || null, 
           lenguaje: lenguaje || null, 
           requerimientoId: id, 
-          usuarioId: usuario.id 
+          usuarioId: currentUserId 
         }
       })
     }
@@ -92,7 +88,6 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
                 <CardHeader className="py-3 bg-slate-100/50 border-b">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-sm">{com.usuario.nombre}</span>
-                    {/* CORRECCIÓN: Formato "es-ES" para evitar hidratación fallida */}
                     <span className="text-xs text-slate-400">{com.creadoEn.toLocaleDateString("es-ES")}</span>
                   </div>
                 </CardHeader>
@@ -100,9 +95,16 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
                   {com.texto && <p className="text-slate-700 text-sm whitespace-pre-wrap">{com.texto}</p>}
                   
                   {com.codigoSnippet && (
-                    <div className="bg-slate-900 rounded-md overflow-hidden relative">
-                      <div className="text-xs text-slate-400 bg-slate-800 px-4 py-1 uppercase">{com.lenguaje || "CODE"}</div>
-                      <pre className="p-4 text-sm text-green-400 overflow-x-auto font-mono">
+                    <div className="bg-slate-900 rounded-md overflow-hidden relative shadow-inner">
+                      <div className="text-xs text-slate-400 bg-slate-800 px-4 py-1.5 uppercase font-semibold tracking-wider">
+                        {com.lenguaje || "CODE"}
+                      </div>
+                      {/* 3. Lógica dinámica de tamaño de fuente */}
+                      <pre className={`p-4 text-green-400 overflow-x-auto font-mono ${
+                        com.codigoSnippet.length > 500 ? 'text-[10px] leading-tight' : 
+                        com.codigoSnippet.length > 200 ? 'text-xs leading-snug' : 
+                        'text-sm leading-relaxed'
+                      }`}>
                         <code>{com.codigoSnippet}</code>
                       </pre>
                     </div>

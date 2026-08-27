@@ -6,26 +6,32 @@ import Link from "next/link"
 import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
 
+// Importamos NextAuth para obtener la sesión real
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+
 export default async function NuevaTarea() {
   
   // Función para guardar en la base de datos
   async function crearRequerimiento(formData: FormData) {
     "use server"
     
-    // 👇 1. Buscamos al usuario actual (Temporal hasta conectar NextAuth)
-    const usuarioActual = await prisma.usuario.findFirst()
-    if (!usuarioActual) throw new Error("No hay usuarios en la base de datos")
+    // 1. Obtenemos al usuario real logueado en lugar de findFirst()
+    const session = await getServerSession(authOptions)
+    const userId = (session?.user as any)?.id
+    
+    if (!userId) throw new Error("No autorizado")
 
     const titulo = formData.get("titulo") as string
     const descripcion = formData.get("descripcion") as string
     
-    // 👇 2. Le enviamos el usuarioId obligatorio a Prisma
+    // 2. Le enviamos el userId real a Prisma
     await prisma.requerimiento.create({
       data: {
         titulo,
         descripcion,
         estado: "SOLICITADO",
-        usuarioId: usuarioActual.id 
+        usuarioId: userId 
       }
     })
     
