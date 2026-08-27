@@ -1,67 +1,75 @@
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 
-// Esta función (Server Action) se ejecuta en el servidor cuando envías el formulario
-async function crear(formData: FormData) {
-  "use server"
+export default async function NuevaTarea() {
   
-  const titulo = formData.get("titulo") as string
-  const descripcion = formData.get("descripcion") as string
-  
-  // Buscamos un usuario o lo creamos si no existe
-  let usuario = await prisma.usuario.findFirst()
-  if (!usuario) {
-    usuario = await prisma.usuario.create({
-      data: { nombre: "Dev", rol: "DEV" }
+  // Función para guardar en la base de datos
+  async function crearRequerimiento(formData: FormData) {
+    "use server"
+    
+    // 👇 1. Buscamos al usuario actual (Temporal hasta conectar NextAuth)
+    const usuarioActual = await prisma.usuario.findFirst()
+    if (!usuarioActual) throw new Error("No hay usuarios en la base de datos")
+
+    const titulo = formData.get("titulo") as string
+    const descripcion = formData.get("descripcion") as string
+    
+    // 👇 2. Le enviamos el usuarioId obligatorio a Prisma
+    await prisma.requerimiento.create({
+      data: {
+        titulo,
+        descripcion,
+        estado: "SOLICITADO",
+        usuarioId: usuarioActual.id 
+      }
     })
+    
+    // Al guardar, regresamos automáticamente al Kanban
+    redirect("/kanban")
   }
 
-  // Guardamos la tarea en PostgreSQL
-  await prisma.requerimiento.create({
-    data: {
-      titulo,
-      descripcion,
-      usuarioId: usuario.id
-    }
-  })
-
-  // Redirigimos de vuelta al tablero principal
-  redirect("/")
-}
-
-export default function NuevoRequerimiento() {
   return (
-    <main className="p-8 bg-slate-50 min-h-screen flex justify-center items-center">
-      <form action={crear} className="bg-white p-8 rounded-lg shadow-sm border w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-slate-900">Nuevo Requerimiento</h1>
+    <main className="p-8 bg-slate-50 min-h-screen flex items-start justify-center pt-20">
+      <Card className="w-full max-w-2xl shadow-lg border-slate-200">
+        <CardHeader className="bg-white border-b border-slate-100 pb-6 rounded-t-xl">
+          <CardTitle className="text-2xl font-bold text-slate-900">Nuevo Requerimiento</CardTitle>
+        </CardHeader>
         
-        <div className="space-y-2">
-          <Label htmlFor="titulo">Título de la Tarea</Label>
-          <Input id="titulo" name="titulo" required placeholder="Ej: Módulo de Reportes" />
-        </div>
+        <CardContent className="pt-6 bg-white rounded-b-xl">
+          <form action={crearRequerimiento} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Título de la Tarea</label>
+              <Input name="titulo" placeholder="Ej: Módulo de Reportes" required className="w-full" />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Descripción / Requisitos</label>
+              <Textarea 
+                name="descripcion" 
+                placeholder="Explica detalladamente qué se necesita..." 
+                required 
+                className="min-h-[150px] w-full resize-none" 
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="descripcion">Descripción / Requisitos</Label>
-          <Textarea id="descripcion" name="descripcion" required placeholder="Explica detalladamente qué se necesita..." className="min-h-[120px]" />
-        </div>
-
-        <div className="flex gap-4 pt-4">
-          {/* Corregimos este Link usando buttonVariants */}
-          <Link 
-            href="/" 
-            className={buttonVariants({ variant: "outline", className: "w-full" })}
-          >
-            Cancelar
-          </Link>
-          
-          <Button type="submit" className="w-full">Guardar Tarea</Button>
-        </div>
-      </form>
+            <div className="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-slate-100">
+              <Link href="/kanban">
+                <Button type="button" variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                  Cancelar
+                </Button>
+              </Link>
+              <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white px-8">
+                Guardar Tarea
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   )
 }
