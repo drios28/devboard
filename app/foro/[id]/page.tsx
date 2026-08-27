@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { revalidatePath } from "next/cache" // 1. Importamos la función para refrescar la pantalla
+import { revalidatePath } from "next/cache"
 
 export default async function ForoRequerimiento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,7 +22,6 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
     const estado = formData.get("estado") as any
     await prisma.requerimiento.update({ where: { id }, data: { estado } })
     
-    // 2. Refrescamos la vista en lugar de redirigir
     revalidatePath(`/foro/${id}`)
   }
 
@@ -32,10 +31,17 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
     const codigoSnippet = formData.get("codigoSnippet") as string
     const lenguaje = formData.get("lenguaje") as string
     
-    // Nos aseguramos de que siempre exista un usuario para evitar errores
     let usuario = await prisma.usuario.findFirst()
     if (!usuario) {
-      usuario = await prisma.usuario.create({ data: { nombre: "Dev", rol: "DEV" } })
+      // CORRECCIÓN: Se agregan email y password obligatorios
+      usuario = await prisma.usuario.create({ 
+        data: { 
+          nombre: "Dev", 
+          rol: "DEV",
+          email: "dev@contingencia.com",
+          password: "123"
+        } 
+      })
     }
     
     if (texto || codigoSnippet) {
@@ -50,14 +56,12 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
       })
     }
     
-    // 3. Refrescamos la vista automáticamente para mostrar el comentario
     revalidatePath(`/foro/${id}`)
   }
 
   return (
     <main className="p-4 sm:p-8 bg-slate-50 min-h-screen">
       
-      {/* Encabezado Responsivo */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{req.titulo}</h1>
@@ -77,7 +81,6 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        {/* Hilo del Foro */}
         <div className="md:col-span-2 space-y-6">
           <h2 className="text-xl font-semibold">Discusión Técnica</h2>
           
@@ -89,7 +92,8 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
                 <CardHeader className="py-3 bg-slate-100/50 border-b">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-sm">{com.usuario.nombre}</span>
-                    <span className="text-xs text-slate-400">{com.creadoEn.toLocaleDateString()}</span>
+                    {/* CORRECCIÓN: Formato "es-ES" para evitar hidratación fallida */}
+                    <span className="text-xs text-slate-400">{com.creadoEn.toLocaleDateString("es-ES")}</span>
                   </div>
                 </CardHeader>
                 <CardContent className="py-4 space-y-4">
@@ -108,7 +112,6 @@ export default async function ForoRequerimiento({ params }: { params: Promise<{ 
             ))
           )}
 
-          {/* Formulario */}
           <Card>
             <CardHeader><CardTitle className="text-lg">Documentar / Explicar</CardTitle></CardHeader>
             <CardContent>
