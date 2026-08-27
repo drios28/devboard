@@ -64,7 +64,7 @@ export default function LoginPage() {
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="drios@empagran.com" 
+                placeholder="usuario@empagran.com" 
                 required 
                 className="w-full h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900" 
               />
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" 
+                placeholder="******" 
                 required 
                 className="w-full h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900" 
               />
