@@ -14,39 +14,37 @@ const authOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
         
-        // 1. Buscamos al usuario por correo
         const user = await prisma.usuario.findUnique({
           where: { email: credentials.email }
         })
         
-        if (!user) return null // El usuario no existe en Railway
+        if (!user) return null 
 
-        // 2. Verificamos la contraseña (soporta texto plano o encriptado)
         let passwordMatch = false;
         if (user.password === credentials.password) {
-          passwordMatch = true; // Coincidencia exacta (texto plano)
+          passwordMatch = true; 
         } else {
           try {
-            passwordMatch = await bcrypt.compare(credentials.password, user.password); // Coincidencia encriptada
+            passwordMatch = await bcrypt.compare(credentials.password, user.password); 
           } catch (e) {
             passwordMatch = false;
           }
         }
 
         if (passwordMatch) {
-          // Si coincide, enviamos estos datos a la sesión
           return { id: user.id, name: user.nombre, email: user.email, rol: (user as any).rol || "Usuario" }
         }
         
-        return null // Contraseña incorrecta
+        return null 
       }
     })
   ],
+  // AÑADIR ESTA LÍNEA AQUÍ:
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt" as const,
   },
   callbacks: {
-    // Trasladamos el ID y el ROL del token a la sesión visible
     async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id
