@@ -1,9 +1,10 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Kanban, BookText, Activity } from "lucide-react"
+import { Kanban, BookText, Activity, BarChart2 } from "lucide-react"
 import Link from "next/link"
 import prisma from "@/lib/prisma"
+import GraficoDashboard from "@/components/GraficoDashboard"
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +15,20 @@ export default async function DashboardPage() {
   const totalTareas = await prisma.requerimiento.count()
   const totalModulos = await prisma.moduloAvanzado.count()
 
+  // Agrupamos las tareas por su estado actual
+  const tareasPorEstado = await prisma.requerimiento.groupBy({
+    by: ['estado'],
+    _count: { estado: true }
+  })
+
+  // Formateamos los datos para que Recharts los entienda
+  const chartData = [
+    { name: "Solicitado", total: tareasPorEstado.find(t => t.estado === 'SOLICITADO')?._count.estado || 0 },
+    { name: "Análisis", total: tareasPorEstado.find(t => t.estado === 'EN_ANALISIS')?._count.estado || 0 },
+    { name: "Desarrollo", total: tareasPorEstado.find(t => t.estado === 'EN_DESARROLLO')?._count.estado || 0 },
+    { name: "Desplegado", total: tareasPorEstado.find(t => t.estado === 'DESPLEGADO')?._count.estado || 0 },
+  ]
+
   return (
     <main className="p-8 bg-slate-50 min-h-screen">
       <div className="mb-8 border-b border-slate-200 pb-6">
@@ -21,7 +36,8 @@ export default async function DashboardPage() {
         <p className="text-slate-500 mt-2">Bienvenido de nuevo, <span className="font-semibold text-slate-700">{nombre}</span>. Aquí tienes el resumen de tu proyecto.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Tarjetas de Resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="shadow-sm border-slate-200 bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Estado del Sistema</CardTitle>
@@ -59,6 +75,17 @@ export default async function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Gráfico de Barras */}
+      <Card className="shadow-sm border-slate-200 bg-white">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
+          <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Distribución de Tareas por Estado</CardTitle>
+          <BarChart2 className="text-slate-400" size={20} />
+        </CardHeader>
+        <CardContent className="pt-6">
+          <GraficoDashboard data={chartData} />
+        </CardContent>
+      </Card>
     </main>
   )
 }
